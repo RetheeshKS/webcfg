@@ -19,6 +19,8 @@
 #include "webcfg_generic.h"
 #include "webcfg.h"
 #include "cap.h"
+#include "webcfg_log.h"
+#include "syscfg/syscfg.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
