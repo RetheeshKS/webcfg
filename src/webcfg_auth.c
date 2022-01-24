@@ -21,7 +21,7 @@
 #include "cap.h"
 #include "webcfg_log.h"
 #include "syscfg/syscfg.h"
-extern cap_user appcaps;
+static cap_user appcaps;
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -131,7 +131,6 @@ void getAuthToken()
 * call parodus create/acquisition script to create new auth token, if success then calls
 * execute_token_script func with args as parodus read script.
 */
-static cap_user appcaps;
 void createNewAuthToken(char *newToken, size_t len, char *hw_mac, char* hw_serial_number)
 {
 	//Call create script
