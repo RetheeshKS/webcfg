@@ -29,9 +29,9 @@
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-#ifndef INCLUDE_BREAKPAD
+//#ifndef INCLUDE_BREAKPAD
 static void sig_handler(int sig);
-#endif
+//#endif
 
 pthread_mutex_t webcfg_mut= PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t  webcfg_con= PTHREAD_COND_INITIALIZER;
@@ -46,9 +46,9 @@ int main()
 	char* strValue = NULL;
 	int ret = 0;
 	int systemStatus = -1;
-#ifdef INCLUDE_BREAKPAD
+/*#ifdef INCLUDE_BREAKPAD
     breakpad_ExceptionHandler();
-#else
+#else*/
 	signal(SIGTERM, sig_handler);
 	signal(SIGINT, sig_handler);
 	signal(SIGUSR1, sig_handler);
@@ -61,7 +61,7 @@ int main()
 	signal(SIGQUIT, sig_handler);
 	signal(SIGHUP, sig_handler);
 	signal(SIGALRM, sig_handler);
-#endif
+//#endif
 	WebcfgInfo("********** Starting component: %s **********\n ", WEBCFG_COMPONENT_NAME);
 	webcfg_drop_root_privilege();
 	curl_global_init(CURL_GLOBAL_DEFAULT);
@@ -120,45 +120,52 @@ int main()
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
-#ifndef INCLUDE_BREAKPAD
+//#ifndef INCLUDE_BREAKPAD
 static void sig_handler(int sig)
 {
 
 	if ( sig == SIGINT ) 
 	{
+		webpaRbus_Uninit();
 		signal(SIGINT, sig_handler); /* reset it to this function */
-		WebcfgError("SIGINT received!\n");
+		WebcfgDebug("SIGINT received!\n");
 		exit(0);
 	}
 	else if ( sig == SIGUSR1 ) 
 	{
+		webpaRbus_Uninit();
 		signal(SIGUSR1, sig_handler); /* reset it to this function */
-		WebcfgError("SIGUSR1 received!\n");
+		WebcfgDebug("SIGUSR1 received!\n");
 	}
 	else if ( sig == SIGUSR2 ) 
 	{
-		WebcfgError("SIGUSR2 received!\n");
+		webpaRbus_Uninit();
+		WebcfgDebug("SIGUSR2 received!\n");
 	}
 	else if ( sig == SIGCHLD ) 
 	{
+		webpaRbus_Uninit();
 		signal(SIGCHLD, sig_handler); /* reset it to this function */
-		WebcfgError("SIGHLD received!\n");
+		WebcfgDebug("SIGHLD received!\n");
 	}
 	else if ( sig == SIGPIPE ) 
 	{
+		webpaRbus_Uninit();
 		signal(SIGPIPE, sig_handler); /* reset it to this function */
-		WebcfgError("SIGPIPE received!\n");
+		WebcfgDebug("SIGPIPE received!\n");
 	}
 	else if ( sig == SIGALRM ) 
 	{
+		webpaRbus_Uninit();
 		signal(SIGALRM, sig_handler); /* reset it to this function */
-		WebcfgError("SIGALRM received!\n");
+		WebcfgDebug("SIGALRM received!\n");
 	}
 	else 
 	{
-		WebcfgError("Signal %d received!\n", sig);
+		webpaRbus_Uninit();
+		WebcfgDebug("Signal %d received!\n", sig);
 		exit(0);
 	}
 	
 }
-#endif
+//#endif
