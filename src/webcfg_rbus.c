@@ -44,6 +44,18 @@ rbusDataElement_t eventDataElement[1] = {
 		{WEBCFG_EVENT_NAME, RBUS_ELEMENT_TYPE_PROPERTY, {NULL, rbusWebcfgEventHandler, NULL, NULL, NULL, NULL}}
 	};
 
+static rbusDataElement_t dataElements[NUM_WEBCFG_ELEMENTS] = {
+
+		{WEBCFG_RFC_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgRfcGetHandler, webcfgRfcSetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_URL_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgUrlGetHandler, webcfgUrlSetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_FORCESYNC_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgFrGetHandler, webcfgFrSetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgTelemetryGetHandler, webcfgTelemetrySetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_DATA_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgDataGetHandler, webcfgDataSetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_SUPPORTED_DOCS_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgSupportedDocsGetHandler, webcfgSupportedDocsSetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_SUPPORTED_VERSION_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgSupportedVersionGetHandler, webcfgSupportedVersionSetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_UPSTREAM_EVENT, RBUS_ELEMENT_TYPE_EVENT, {NULL, NULL, NULL, NULL, eventSubHandler, NULL}}
+	};
+
 typedef struct
 {
     char *paramName;
@@ -113,7 +125,10 @@ WEBCFG_STATUS webconfigRbusInit(const char *pComponentName)
 
 void webpaRbus_Uninit()
 {
+    WebcfgDebug("Unregistering  data element from rbus.... \n ");
+    ret = rbus_unregDataElements(rbus_handle, NUM_WEBCFG_ELEMENTS, dataElements);
     rbus_close(rbus_handle);
+    WebcfgDebug("webpaRbus_Uninit Completed.... \n ");
 }
 
 /**
@@ -804,19 +819,9 @@ WEBCFG_STATUS regWebConfigDataModel()
 		return WEBCFG_FAILURE;
 	}
 
-	rbusDataElement_t dataElements[NUM_WEBCFG_ELEMENTS] = {
-
-		{WEBCFG_RFC_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgRfcGetHandler, webcfgRfcSetHandler, NULL, NULL, NULL, NULL}},
-		{WEBCFG_URL_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgUrlGetHandler, webcfgUrlSetHandler, NULL, NULL, NULL, NULL}},
-		{WEBCFG_FORCESYNC_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgFrGetHandler, webcfgFrSetHandler, NULL, NULL, NULL, NULL}},
-		{WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgTelemetryGetHandler, webcfgTelemetrySetHandler, NULL, NULL, NULL, NULL}},
-		{WEBCFG_DATA_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgDataGetHandler, webcfgDataSetHandler, NULL, NULL, NULL, NULL}},
-		{WEBCFG_SUPPORTED_DOCS_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgSupportedDocsGetHandler, webcfgSupportedDocsSetHandler, NULL, NULL, NULL, NULL}},
-		{WEBCFG_SUPPORTED_VERSION_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgSupportedVersionGetHandler, webcfgSupportedVersionSetHandler, NULL, NULL, NULL, NULL}},
-		{WEBCFG_UPSTREAM_EVENT, RBUS_ELEMENT_TYPE_EVENT, {NULL, NULL, NULL, NULL, eventSubHandler, NULL}}
-	};
-	WebcfgDebug("Unregistering  data element %s with rbus.... \n ", WEBCFG_RFC_PARAM);
-	ret = rbus_unregDataElements(rbus_handle, NUM_WEBCFG_ELEMENTS, dataElements);
+	
+	
+	
 	WebcfgDebug("Registering data element %s with rbus.... \n ", WEBCFG_RFC_PARAM);
 	ret = rbus_regDataElements(rbus_handle, NUM_WEBCFG_ELEMENTS, dataElements);
 	if(ret == RBUS_ERROR_SUCCESS)
