@@ -815,6 +815,9 @@ WEBCFG_STATUS regWebConfigDataModel()
 		{WEBCFG_SUPPORTED_VERSION_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgSupportedVersionGetHandler, webcfgSupportedVersionSetHandler, NULL, NULL, NULL, NULL}},
 		{WEBCFG_UPSTREAM_EVENT, RBUS_ELEMENT_TYPE_EVENT, {NULL, NULL, NULL, NULL, eventSubHandler, NULL}}
 	};
+	WebcfgDebug("Unregistering  data element %s with rbus.... \n ", WEBCFG_RFC_PARAM);
+	ret = rbus_unregDataElements(rbus_handle, NUM_WEBCFG_ELEMENTS, dataElements);
+	WebcfgDebug("Registering data element %s with rbus.... \n ", WEBCFG_RFC_PARAM);
 	ret = rbus_regDataElements(rbus_handle, NUM_WEBCFG_ELEMENTS, dataElements);
 	if(ret == RBUS_ERROR_SUCCESS)
 	{
