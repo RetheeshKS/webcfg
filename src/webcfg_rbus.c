@@ -123,13 +123,6 @@ WEBCFG_STATUS webconfigRbusInit(const char *pComponentName)
 	return WEBCFG_SUCCESS;
 }
 
-void webpaRbus_Uninit()
-{
-    WebcfgDebug("Unregistering  data element from rbus.... \n ");
-    ret = rbus_unregDataElements(rbus_handle, NUM_WEBCFG_ELEMENTS, dataElements);
-    rbus_close(rbus_handle);
-    WebcfgDebug("webpaRbus_Uninit Completed.... \n ");
-}
 
 /**
  * Data set handler for parameters owned by Webconfig
@@ -1252,6 +1245,15 @@ rbusError_t removeRBUSEventElement()
 		WebcfgDebug("rbus_unregDataElements success\n");
 	}
 	return rc;
+}
+
+void webpaRbus_Uninit()
+{
+    WebcfgDebug("Unregistering  data element from rbus.... \n ");
+    rbus_unregDataElements(rbus_handle, NUM_WEBCFG_ELEMENTS, dataElements);
+    removeRBUSEventElement();
+    rbus_close(rbus_handle);
+    WebcfgDebug("webpaRbus_Uninit Completed.... \n ");
 }
 
 bool get_rbus_RfcEnable()
