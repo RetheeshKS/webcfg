@@ -32,7 +32,7 @@
 //#ifndef INCLUDE_BREAKPAD
 static void sig_handler(int sig);
 //#endif
-
+void webpaRbus_Uninit();
 pthread_mutex_t webcfg_mut= PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t  webcfg_con= PTHREAD_COND_INITIALIZER;
 /*----------------------------------------------------------------------------*/
