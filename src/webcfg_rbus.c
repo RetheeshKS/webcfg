@@ -789,6 +789,20 @@ rbusError_t eventSubHandler(rbusHandle_t handle, rbusEventSubAction_t action, co
  * Data element over bus will be Device.X_RDK_WebConfig.RfcEnable, Device.X_RDK_WebConfig.ForceSync,
  * Device.X_RDK_WebConfig.URL
  */
+
+
+static rbusDataElement_t dataElements[NUM_WEBCFG_ELEMENTS] = {
+
+		{WEBCFG_RFC_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgRfcGetHandler, webcfgRfcSetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_URL_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgUrlGetHandler, webcfgUrlSetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_FORCESYNC_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgFrGetHandler, webcfgFrSetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgTelemetryGetHandler, webcfgTelemetrySetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_DATA_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgDataGetHandler, webcfgDataSetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_SUPPORTED_DOCS_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgSupportedDocsGetHandler, webcfgSupportedDocsSetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_SUPPORTED_VERSION_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgSupportedVersionGetHandler, webcfgSupportedVersionSetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_UPSTREAM_EVENT, RBUS_ELEMENT_TYPE_EVENT, {NULL, NULL, NULL, NULL, eventSubHandler, NULL}}
+	};
+
 WEBCFG_STATUS regWebConfigDataModel()
 {
 	rbusError_t ret = RBUS_ERROR_SUCCESS;
@@ -824,18 +838,6 @@ WEBCFG_STATUS regWebConfigDataModel()
 	WebcfgInfo("rbus reg status returned is %d\n", status);
 	return status;
 }
-
-static rbusDataElement_t dataElements[NUM_WEBCFG_ELEMENTS] = {
-
-		{WEBCFG_RFC_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgRfcGetHandler, webcfgRfcSetHandler, NULL, NULL, NULL, NULL}},
-		{WEBCFG_URL_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgUrlGetHandler, webcfgUrlSetHandler, NULL, NULL, NULL, NULL}},
-		{WEBCFG_FORCESYNC_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgFrGetHandler, webcfgFrSetHandler, NULL, NULL, NULL, NULL}},
-		{WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgTelemetryGetHandler, webcfgTelemetrySetHandler, NULL, NULL, NULL, NULL}},
-		{WEBCFG_DATA_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgDataGetHandler, webcfgDataSetHandler, NULL, NULL, NULL, NULL}},
-		{WEBCFG_SUPPORTED_DOCS_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgSupportedDocsGetHandler, webcfgSupportedDocsSetHandler, NULL, NULL, NULL, NULL}},
-		{WEBCFG_SUPPORTED_VERSION_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgSupportedVersionGetHandler, webcfgSupportedVersionSetHandler, NULL, NULL, NULL, NULL}},
-		{WEBCFG_UPSTREAM_EVENT, RBUS_ELEMENT_TYPE_EVENT, {NULL, NULL, NULL, NULL, eventSubHandler, NULL}}
-	};
 //maps rbus rbusValueType_t to WDMP datatype
 DATA_TYPE mapRbusToWdmpDataType(rbusValueType_t rbusType)
 {
