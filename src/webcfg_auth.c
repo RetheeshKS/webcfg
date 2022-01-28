@@ -135,15 +135,8 @@ void createNewAuthToken(char *newToken, size_t len, char *hw_mac, char* hw_seria
 {
 	//Call create script
 	char output[12] = {'\0'};
-	WebcfgInfo(("Gaining root permission...\n"));
-	gain_root_privilege();
-	
+		
 	execute_token_script(output,WEBPA_CREATE_HEADER,sizeof(output),hw_mac,hw_serial_number);
-	
-	WebcfgInfo(("Dropping root permission...\n"));
-	init_capability();
-	drop_root_caps(&appcaps);
-	update_process_caps(&appcaps);
 	
 	if (strlen(output)>0  && strcmp(output,"SUCCESS")==0)
 	{
