@@ -37,6 +37,7 @@
 char *url = NULL;
 char *interface = NULL;
 char device_mac[32] = {'\0'};
+int numLoops;
 
 char* get_deviceMAC()
 {
@@ -811,4 +812,3 @@ int main( )
 	}
 	return rv;
 }
-
