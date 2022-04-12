@@ -271,4 +271,3 @@ static void get_parodus_url(char **parodus_url, char **client_url)
 		WebcfgDebug("client_url formed is %s\n", *client_url);
 	}
 }
-
