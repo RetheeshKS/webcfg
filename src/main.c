@@ -29,10 +29,10 @@
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-//#ifndef INCLUDE_BREAKPAD
+#ifndef INCLUDE_BREAKPAD
 static void sig_handler(int sig);
-//#endif
-void webpaRbus_Uninit();
+#endif
+
 pthread_mutex_t webcfg_mut= PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t  webcfg_con= PTHREAD_COND_INITIALIZER;
 /*----------------------------------------------------------------------------*/
@@ -46,9 +46,9 @@ int main()
 	char* strValue = NULL;
 	int ret = 0;
 	int systemStatus = -1;
-/*#ifdef INCLUDE_BREAKPAD
+#ifdef INCLUDE_BREAKPAD
     breakpad_ExceptionHandler();
-#else*/
+#else
 	signal(SIGTERM, sig_handler);
 	signal(SIGINT, sig_handler);
 	signal(SIGUSR1, sig_handler);
@@ -61,7 +61,7 @@ int main()
 	signal(SIGQUIT, sig_handler);
 	signal(SIGHUP, sig_handler);
 	signal(SIGALRM, sig_handler);
-//#endif
+#endif
 	WebcfgInfo("********** Starting component: %s **********\n ", WEBCFG_COMPONENT_NAME);
 	webcfg_drop_root_privilege();
 	curl_global_init(CURL_GLOBAL_DEFAULT);
@@ -75,6 +75,9 @@ int main()
 		WebcfgDebug("rbus_waitUntilSystemReady systemStatus is %d\n", systemStatus);
 		// wait for upstream subscriber for 5mins
 		waitForUpstreamEventSubscribe(300);
+		#ifdef WAN_FAILOVER_SUPPORTED
+		subscribeTo_CurrentActiveInterface_Event();
+		#endif
 		ret = rbus_GetValueFromDB( PARAM_RFC_ENABLE, &strValue );
 		if (ret == 0)
 		{
@@ -117,55 +120,53 @@ int main()
 	return 1;
 }
 
+const char *rdk_logger_module_fetch(void)
+{
+    return "LOG.RDK.WEBCONFIG";
+}
+
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
-//#ifndef INCLUDE_BREAKPAD
+#ifndef INCLUDE_BREAKPAD
 static void sig_handler(int sig)
 {
 
 	if ( sig == SIGINT ) 
 	{
-		webpaRbus_Uninit();
 		signal(SIGINT, sig_handler); /* reset it to this function */
-		WebcfgDebug("SIGINT received!\n");
+		WebcfgError("SIGINT received!\n");
 		exit(0);
 	}
 	else if ( sig == SIGUSR1 ) 
 	{
-		webpaRbus_Uninit();
 		signal(SIGUSR1, sig_handler); /* reset it to this function */
-		WebcfgDebug("SIGUSR1 received!\n");
+		WebcfgError("SIGUSR1 received!\n");
 	}
 	else if ( sig == SIGUSR2 ) 
 	{
-		webpaRbus_Uninit();
-		WebcfgDebug("SIGUSR2 received!\n");
+		WebcfgError("SIGUSR2 received!\n");
 	}
 	else if ( sig == SIGCHLD ) 
 	{
-		webpaRbus_Uninit();
 		signal(SIGCHLD, sig_handler); /* reset it to this function */
-		WebcfgDebug("SIGHLD received!\n");
+		WebcfgError("SIGHLD received!\n");
 	}
 	else if ( sig == SIGPIPE ) 
 	{
-		webpaRbus_Uninit();
 		signal(SIGPIPE, sig_handler); /* reset it to this function */
-		WebcfgDebug("SIGPIPE received!\n");
+		WebcfgError("SIGPIPE received!\n");
 	}
 	else if ( sig == SIGALRM ) 
 	{
-		webpaRbus_Uninit();
 		signal(SIGALRM, sig_handler); /* reset it to this function */
-		WebcfgDebug("SIGALRM received!\n");
+		WebcfgError("SIGALRM received!\n");
 	}
 	else 
 	{
-		webpaRbus_Uninit();
-		WebcfgDebug("Signal %d received!\n", sig);
+		WebcfgError("Signal %d received!\n", sig);
 		exit(0);
 	}
 	
 }
-//#endif
+#endif
