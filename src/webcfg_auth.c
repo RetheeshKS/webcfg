@@ -18,9 +18,6 @@
 #include "webcfg_auth.h"
 #include "webcfg_generic.h"
 #include "webcfg.h"
-#include "cap.h"
-#include "webcfg_log.h"
-#include "syscfg/syscfg.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -130,13 +127,12 @@ void getAuthToken()
 * call parodus create/acquisition script to create new auth token, if success then calls
 * execute_token_script func with args as parodus read script.
 */
+
 void createNewAuthToken(char *newToken, size_t len, char *hw_mac, char* hw_serial_number)
 {
 	//Call create script
 	char output[12] = {'\0'};
-		
 	execute_token_script(output,WEBPA_CREATE_HEADER,sizeof(output),hw_mac,hw_serial_number);
-	
 	if (strlen(output)>0  && strcmp(output,"SUCCESS")==0)
 	{
 		//Call read script
@@ -176,6 +172,5 @@ void execute_token_script(char *token, char *name, size_t len, char *mac, char *
         }
     }
 }
-
 
 
