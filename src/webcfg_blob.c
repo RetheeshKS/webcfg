@@ -308,4 +308,3 @@ int writeToFileData(char *db_file_path, char *data, size_t size)
 		return 0;
 	}
 }
-
