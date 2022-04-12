@@ -37,6 +37,7 @@
 char *url = NULL;
 char *interface = NULL;
 char device_mac[32] = {'\0'};
+int numLoops;
 
 void printTest();
 
@@ -273,4 +274,3 @@ int main( int argc, char *argv[] )
 	}
 	return rv;
 }
-
