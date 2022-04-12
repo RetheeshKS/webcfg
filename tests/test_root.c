@@ -25,6 +25,8 @@
 #include "../src/webcfg_generic.h"
 
 char *reason = NULL;
+int numLoops;
+
 extern char g_RebootReason;
 
 void setRebootReason(char *r_reason)
@@ -281,4 +283,3 @@ int main( )
 	}
 	return rv;
 }
-
