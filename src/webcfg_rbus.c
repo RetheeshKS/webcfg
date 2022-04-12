@@ -23,6 +23,9 @@
 #include <wdmp-c.h>
 #include "webcfg_rbus.h"
 #include "webcfg_metadata.h"
+#ifdef WAN_FAILOVER_SUPPORTED
+#include "webcfg_multipart.h"
+#endif
 
 static rbusHandle_t rbus_handle;
 
@@ -40,10 +43,22 @@ static char ForceSync[256]={'\0'};
 static char ForceSyncTransID[256]={'\0'};
 
 static int subscribed = 0;
+
+#ifdef WAN_FAILOVER_SUPPORTED
+static void eventReceiveHandler(
+    rbusHandle_t rbus_handle,
+    rbusEvent_t const* event,
+    rbusEventSubscription_t* subscription);
+
+static void subscribeAsyncHandler(
+    rbusHandle_t rbus_handle,
+    rbusEventSubscription_t* subscription,
+    rbusError_t error);
+#endif
+
 rbusDataElement_t eventDataElement[1] = {
 		{WEBCFG_EVENT_NAME, RBUS_ELEMENT_TYPE_PROPERTY, {NULL, rbusWebcfgEventHandler, NULL, NULL, NULL, NULL}}
 	};
-
 
 typedef struct
 {
@@ -112,6 +127,10 @@ WEBCFG_STATUS webconfigRbusInit(const char *pComponentName)
 	return WEBCFG_SUCCESS;
 }
 
+void webpaRbus_Uninit()
+{
+    rbus_close(rbus_handle);
+}
 
 /**
  * Data set handler for parameters owned by Webconfig
@@ -380,14 +399,17 @@ rbusError_t webcfgFrSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSet
             if(data) {
                 WebcfgDebug("Call datamodel function  with data %s \n", data);
 
-		if(0 == strncmp(data,"telemetry",strlen("telemetry")))
+		if(strlen(data) == strlen("telemetry"))
 		{
-			char telemetryUrl[256] = {0};
-			Get_Supplementary_URL("Telemetry", telemetryUrl);
-			if(strncmp(telemetryUrl,"NULL",strlen("NULL")) == 0)
+			if(0 == strncmp(data,"telemetry",strlen("telemetry")))
 			{
-				WebcfgError("Telemetry url is null so, force sync SET failed\n");
-				return RBUS_ERROR_BUS_ERROR;
+				char telemetryUrl[256] = {0};
+				Get_Supplementary_URL("Telemetry", telemetryUrl);
+				if(strncmp(telemetryUrl,"NULL",strlen("NULL")) == 0)
+				{
+					WebcfgError("Telemetry url is null so, force sync SET failed\n");
+					return RBUS_ERROR_BUS_ERROR;
+				}
 			}
 		}
 
@@ -789,9 +811,20 @@ rbusError_t eventSubHandler(rbusHandle_t handle, rbusEventSubAction_t action, co
  * Data element over bus will be Device.X_RDK_WebConfig.RfcEnable, Device.X_RDK_WebConfig.ForceSync,
  * Device.X_RDK_WebConfig.URL
  */
+WEBCFG_STATUS regWebConfigDataModel()
+{
+	rbusError_t ret = RBUS_ERROR_SUCCESS;
+	rbusError_t retPsmGet = RBUS_ERROR_BUS_ERROR;
+	WEBCFG_STATUS status = WEBCFG_SUCCESS;
 
+	WebcfgInfo("Registering parameters %s, %s, %s %s\n", WEBCFG_RFC_PARAM, WEBCFG_FORCESYNC_PARAM, WEBCFG_URL_PARAM, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM);
+	if(!rbus_handle)
+	{
+		WebcfgError("regWebConfigDataModel Failed in getting bus handles\n");
+		return WEBCFG_FAILURE;
+	}
 
-static rbusDataElement_t dataElements[NUM_WEBCFG_ELEMENTS] = {
+	rbusDataElement_t dataElements[NUM_WEBCFG_ELEMENTS] = {
 
 		{WEBCFG_RFC_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgRfcGetHandler, webcfgRfcSetHandler, NULL, NULL, NULL, NULL}},
 		{WEBCFG_URL_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgUrlGetHandler, webcfgUrlSetHandler, NULL, NULL, NULL, NULL}},
@@ -802,24 +835,6 @@ static rbusDataElement_t dataElements[NUM_WEBCFG_ELEMENTS] = {
 		{WEBCFG_SUPPORTED_VERSION_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgSupportedVersionGetHandler, webcfgSupportedVersionSetHandler, NULL, NULL, NULL, NULL}},
 		{WEBCFG_UPSTREAM_EVENT, RBUS_ELEMENT_TYPE_EVENT, {NULL, NULL, NULL, NULL, eventSubHandler, NULL}}
 	};
-
-WEBCFG_STATUS regWebConfigDataModel()
-{
-	rbusError_t ret = RBUS_ERROR_SUCCESS;
-	rbusError_t retPsmGet = RBUS_ERROR_BUS_ERROR;
-	WEBCFG_STATUS status = WEBCFG_SUCCESS;
-	
-	WebcfgInfo("Registering parameters %s, %s, %s %s\n", WEBCFG_RFC_PARAM, WEBCFG_FORCESYNC_PARAM, WEBCFG_URL_PARAM, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM);
-	if(!rbus_handle)
-	{
-		WebcfgError("regWebConfigDataModel Failed in getting bus handles\n");
-		return WEBCFG_FAILURE;
-	}
-
-	
-	
-	
-	WebcfgDebug("Registering data element %s with rbus.... \n ", WEBCFG_RFC_PARAM);
 	ret = rbus_regDataElements(rbus_handle, NUM_WEBCFG_ELEMENTS, dataElements);
 	if(ret == RBUS_ERROR_SUCCESS)
 	{
@@ -829,26 +844,23 @@ WEBCFG_STATUS regWebConfigDataModel()
 
 		memset(ForceSyncTransID, 0, 256);
 		webcfgStrncpy( ForceSyncTransID, "", sizeof(ForceSyncTransID));
+
 		// Initialise rfc enable global variable value
 		char *tmpchar = NULL;
 		retPsmGet = rbus_GetValueFromDB(paramRFCEnable, &tmpchar);
 		if (retPsmGet != RBUS_ERROR_SUCCESS){
-			WebcfgError("psm_get failed ret %d for parameter %s and value %s\n", retPsmGet, WEBCFG_RFC_PARAM, RfcVal);
+			WebcfgError("psm_get failed ret %d for parameter %s and value %s\n", retPsmGet, WEBCFG_RFC_PARAM, tmpchar);
 		}
-		else
-		{
-			WebcfgInfo("psm_get success ret %d for parameter %s and value %s\n", retPsmGet, WEBCFG_RFC_PARAM, RfcVal);
+		else{
+			WebcfgInfo("psm_get success ret %d for parameter %s and value %s\n", retPsmGet, WEBCFG_RFC_PARAM, tmpchar);
 			if(tmpchar != NULL)
 			{
-				WebcfgDebug("B4 char to bool conversion\n");
 				if(((strcmp (tmpchar, "true") == 0)) || (strcmp (tmpchar, "TRUE") == 0))
 				{
 					RfcVal = true;
 				}
 				free(tmpchar);
 			}
-			WebcfgDebug("RfcVal fetched %d\n", RfcVal);
-			
 		}
 	}
 	else
@@ -860,6 +872,7 @@ WEBCFG_STATUS regWebConfigDataModel()
 	WebcfgInfo("rbus reg status returned is %d\n", status);
 	return status;
 }
+
 //maps rbus rbusValueType_t to WDMP datatype
 DATA_TYPE mapRbusToWdmpDataType(rbusValueType_t rbusType)
 {
@@ -1271,15 +1284,6 @@ rbusError_t removeRBUSEventElement()
 	return rc;
 }
 
-void webpaRbus_Uninit()
-{
-    WebcfgDebug("Unregistering  data element from rbus.... \n ");
-    rbus_unregDataElements(rbus_handle, NUM_WEBCFG_ELEMENTS, dataElements);
-    removeRBUSEventElement();
-    rbus_close(rbus_handle);
-    WebcfgDebug("webpaRbus_Uninit Completed.... \n ");
-}
-
 bool get_rbus_RfcEnable()
 {
     return RfcVal;
@@ -1358,6 +1362,20 @@ int parseForceSyncJson(char *jsonpayload, char **forceSyncVal, char **forceSynct
 			force_sync_transid = cJSON_GetObjectItem( json, "transaction_id" )->valuestring;
 			if ((force_sync_str != NULL) && strlen(force_sync_str) > 0)
 			{
+				if(strlen(force_sync_str) == strlen("telemetry"))
+				{
+					if(0 == strncmp(force_sync_str,"telemetry",strlen("telemetry")))
+					{
+						char telemetryUrl[256] = {0};
+						Get_Supplementary_URL("Telemetry", telemetryUrl);
+						if(strncmp(telemetryUrl,"NULL",strlen("NULL")) == 0)
+						{
+							WebcfgError("Telemetry url is null so, force sync SET failed\n");
+							cJSON_Delete(json);
+							return -1;
+						}
+					}
+				}
 				*forceSyncVal = strdup(force_sync_str);
 				WebcfgDebug("*forceSyncVal value parsed from payload is %s\n", *forceSyncVal);
 			}
@@ -1388,6 +1406,7 @@ int set_rbus_ForceSync(char* pString, int *pStatus)
 {
     char *transactionId = NULL;
     char *value = NULL;
+    int parseJsonRet = 0;
 
     memset( ForceSync, 0, sizeof( ForceSync ));
 
@@ -1397,7 +1416,11 @@ int set_rbus_ForceSync(char* pString, int *pStatus)
 	if(strlen(pString)>0)
 	{
 		WebcfgInfo("Received poke request, proceed to parseForceSyncJson\n");
-		parseForceSyncJson(pString, &value, &transactionId);
+		parseJsonRet = parseForceSyncJson(pString, &value, &transactionId);
+		if(-1 == parseJsonRet)
+		{
+			return 0; // 0 corresponds to indicate error or failure
+		}
 		if(value !=NULL)
 		{
 			WebcfgDebug("After parseForceSyncJson. value %s transactionId %s\n", value, transactionId);
@@ -1420,6 +1443,12 @@ int set_rbus_ForceSync(char* pString, int *pStatus)
             *pStatus = 1;
             return 0;
         }
+	else if(get_maintenanceSync())
+	{
+		WebcfgInfo("Maintenance window sync is in progress, Ignoring this request.\n");
+		*pStatus = 1;
+		return 0;
+	}
 	else if(strlen(ForceSyncTransID)>0)
         {
             WebcfgInfo("Force sync is already in progress, Ignoring this request.\n");
@@ -1563,3 +1592,54 @@ void waitForUpstreamEventSubscribe(int wait_time)
 		}
 	}
 }
+
+#ifdef WAN_FAILOVER_SUPPORTED
+static void eventReceiveHandler(
+    rbusHandle_t rbus_handle,
+    rbusEvent_t const* event,
+    rbusEventSubscription_t* subscription)
+{
+    (void)rbus_handle;
+    char * interface = NULL;
+    rbusValue_t newValue = rbusObject_GetValue(event->data, "value");
+    rbusValue_t oldValue = rbusObject_GetValue(event->data, "oldValue");
+    WebcfgInfo("Consumer receiver ValueChange event for param %s\n", event->name);
+
+    if(newValue) {    
+        interface = (char *) rbusValue_GetString(newValue, NULL);
+	set_global_interface(interface);
+    }	
+    if(newValue !=NULL && oldValue!=NULL && get_global_interface()!=NULL) {
+            WebcfgInfo("New Value: %s Old Value: %s New Interface Value: %s\n", rbusValue_GetString(newValue, NULL), rbusValue_GetString(oldValue, NULL), get_global_interface());
+    }    
+}
+
+static void subscribeAsyncHandler(
+    rbusHandle_t rbus_handle,
+    rbusEventSubscription_t* subscription,
+    rbusError_t error)
+{
+  (void)rbus_handle;
+
+  WebcfgInfo("subscribeAsyncHandler event %s, error %d - %s\n", subscription->eventName, error, rbusError_ToString(error));
+}
+
+
+//Subscribe for Device.X_RDK_WanManager.CurrentActiveInterface
+int subscribeTo_CurrentActiveInterface_Event()
+{
+      int rc = RBUS_ERROR_SUCCESS;
+      WebcfgDebug("Subscribing to %s Event\n", WEBCFG_INTERFACE_PARAM);
+      rc = rbusEvent_SubscribeAsync (
+        rbus_handle,
+        WEBCFG_INTERFACE_PARAM,
+        eventReceiveHandler,
+	subscribeAsyncHandler,
+        "Webcfg_Interface",
+        10*20);
+      if(rc != RBUS_ERROR_SUCCESS) {
+	      WebcfgError("%s subscribe failed : %d - %s\n", WEBCFG_INTERFACE_PARAM, rc, rbusError_ToString(rc));
+      }  
+      return rc;
+}      
+#endif
